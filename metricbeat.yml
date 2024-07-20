@@ -13,11 +13,6 @@ metricbeat.modules:
     enabled: true
     certificate_authorities: ${CA_CERT}
 
-- module: logstash
-  xpack.enabled: true
-  period: 10s
-  hosts: ${LOGSTASH_HOSTS}
-
 - module: kibana
   metricsets: 
     - stats

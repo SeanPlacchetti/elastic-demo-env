@@ -11,9 +11,9 @@ try:
   apm = make_apm_client({
       'SERVICE_NAME': 'my_python_service',
       'SECRET_TOKEN': 'supersecrettoken',
-      # SERVER_URL must be set to "fleet-server" if running as a docker container.
+      # SERVER_URL must be set to "apm-server" if running as a docker container.
       # if running as a local python script, then set the url to "LOCALHOST"
-      'SERVER_URL': 'http://fleet-server:8200',
+      'SERVER_URL': 'http://apm-server:8200',
       'ENVIRONMENT': 'development'
   })
 except Exception as e:
