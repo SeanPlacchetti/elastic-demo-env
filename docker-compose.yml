@@ -7,6 +7,12 @@ volumes:
     driver: local
   esdata03:
     driver: local
+  esbdata01:
+    driver: local
+  esbdata02:
+    driver: local
+  esbdata03:
+    driver: local
   kibanadata:
     driver: local
   metricbeatdata:
@@ -58,6 +64,24 @@ services:
           "  - name: es03\n"\
           "    dns:\n"\
           "      - es03\n"\
+          "      - localhost\n"\
+          "    ip:\n"\
+          "      - 127.0.0.1\n"\
+          "  - name: esb01\n"\
+          "    dns:\n"\
+          "      - esb01\n"\
+          "      - localhost\n"\
+          "    ip:\n"\
+          "      - 127.0.0.1\n"\
+          "  - name: esb02\n"\
+          "    dns:\n"\
+          "      - esb02\n"\
+          "      - localhost\n"\
+          "    ip:\n"\
+          "      - 127.0.0.1\n"\
+          "  - name: esb03\n"\
+          "    dns:\n"\
+          "      - esb03\n"\
           "      - localhost\n"\
           "    ip:\n"\
           "      - 127.0.0.1\n"\
@@ -223,6 +247,71 @@ services:
       interval: 10s
       timeout: 10s
       retries: 120
+  #################################################
+  # Cluster B — three nodes, CCS’ing cluster A
+  #################################################
+
+  esb01:
+    image: docker.elastic.co/elasticsearch/elasticsearch:${STACK_VERSION}
+    volumes:
+      - certs:/usr/share/elasticsearch/config/certs
+      - esbdata01:/usr/share/elasticsearch/data
+    environment:
+      - node.name=esb01
+      - cluster.name=${CLUSTER_NAME}_B                # new cluster B name
+      - discovery.seed_hosts=esb01,esb02,esb03
+      - cluster.initial_master_nodes=esb01,esb02,esb03
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
+      - bootstrap.memory_lock=true
+      - xpack.security.enabled=true
+      - xpack.security.http.ssl.enabled=true
+      - xpack.security.http.ssl.key=certs/esb01/esb01.key
+      - xpack.security.http.ssl.certificate=certs/esb01/esb01.crt
+      - xpack.security.http.ssl.certificate_authorities=certs/ca/ca.crt
+      - xpack.security.transport.ssl.enabled=true
+      - xpack.security.transport.ssl.key=certs/esb01/esb01.key
+      - xpack.security.transport.ssl.certificate=certs/esb01/esb01.crt
+      - xpack.security.transport.ssl.certificate_authorities=certs/ca/ca.crt
+      - xpack.security.transport.ssl.verification_mode=certificate
+      # ── CCS settings to talk to cluster A ───────────────────────────
+      - cluster.remote.clusterA.seeds=es01:9300,es02:9300,es03:9300
+      - cluster.remote.clusterA.skip_unavailable=true
+      - cluster.remote.clusterA.username=elastic
+      - cluster.remote.clusterA.password=${ELASTIC_PASSWORD}
+      # ─────────────────────────────────────────────────────────────────
+      - xpack.license.self_generated.type=${LICENSE}
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+
+  esb02:
+    image: docker.elastic.co/elasticsearch/elasticsearch:${STACK_VERSION}
+    volumes:
+      - certs:/usr/share/elasticsearch/config/certs
+      - esbdata02:/usr/share/elasticsearch/data
+    environment:
+      - node.name=esb02
+      - discovery.seed_hosts=esb01,esb02,esb03
+      - cluster.initial_master_nodes=esb01,esb02,esb03
+      - xpack.security.http.ssl.key=certs/esb02/esb02.key
+      - xpack.security.http.ssl.certificate=certs/esb02/esb02.crt
+      - xpack.security.transport.ssl.key=certs/esb02/esb02.key
+      - xpack.security.transport.ssl.certificate=certs/esb02/esb02.crt
+
+  esb03:
+    image: docker.elastic.co/elasticsearch/elasticsearch:${STACK_VERSION}
+    volumes:
+      - certs:/usr/share/elasticsearch/config/certs
+      - esbdata03:/usr/share/elasticsearch/data
+    environment:
+      - node.name=esb03
+      - discovery.seed_hosts=esb01,esb02,esb03
+      - cluster.initial_master_nodes=esb01,esb02,esb03
+      - xpack.security.http.ssl.key=certs/esb03/esb03.key
+      - xpack.security.http.ssl.certificate=certs/esb03/esb03.crt
+      - xpack.security.transport.ssl.key=certs/esb03/esb03.key
+      - xpack.security.transport.ssl.certificate=certs/esb03/esb03.crt
 
   apm-server:
     image: docker.elastic.co/apm/apm-server:${STACK_VERSION}
